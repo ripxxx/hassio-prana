@@ -4,11 +4,14 @@ from . import DOMAIN
 from datetime import datetime, timedelta
 import logging
 import math
-from homeassistant.components.fan import (
-    SUPPORT_SET_SPEED,
-    SUPPORT_DIRECTION,
-    SUPPORT_PRESET_MODE,
-    FanEntity,
+
+from homeassistant.components.fan import PLATFORM_SCHEMA, FanEntity, FanEntityFeature
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    ATTR_MODE,
+    CONF_HOST,
+    CONF_NAME,
+    CONF_TOKEN,
 )
 
 from homeassistant.helpers.update_coordinator import (
@@ -80,7 +83,7 @@ class PranaFan(CoordinatorEntity, FanEntity):
     def extra_state_attributes(self):
         """Provide attributes for display on device card."""
         LOGGER.debug("Setting device attributes")
-        attributes = { 
+        attributes = {
             "co2": self.coordinator.co2,
             "voc": self.coordinator.voc,
             "auto_mode": self.coordinator.auto_mode,
@@ -111,7 +114,7 @@ class PranaFan(CoordinatorEntity, FanEntity):
     @property
     def supported_features(self) -> int:
         """Flag supported features."""
-        return SUPPORT_SET_SPEED | SUPPORT_DIRECTION | SUPPORT_PRESET_MODE
+        return FanEntityFeature.SET_SPEED | FanEntityFeature.DIRECTION | FanEntityFeature.PRESET_MODE | FanEntityFeature.TURN_OFF | FanEntityFeature.TURN_ON
 
     async def async_turn_on(self, speed: str = None, percentage=None, preset_mode=None, **kwargs) -> None:
         """Turn on the entity."""

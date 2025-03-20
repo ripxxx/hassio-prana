@@ -1,8 +1,6 @@
 from homeassistant.components.switch import (
     DOMAIN as ENTITY_DOMAIN,
     SwitchEntity,
-    DEVICE_CLASS_SWITCH,
-    DEVICE_CLASS_OUTLET,
 )
 
 """Support for Prana fan."""
@@ -11,11 +9,14 @@ from . import DOMAIN
 from datetime import datetime, timedelta
 import logging
 import math
-from homeassistant.components.fan import (
-    SUPPORT_SET_SPEED,
-    SUPPORT_DIRECTION,
-    SUPPORT_PRESET_MODE,
-    FanEntity,
+
+from homeassistant.components.fan import PLATFORM_SCHEMA, FanEntity, FanEntityFeature
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    ATTR_MODE,
+    CONF_HOST,
+    CONF_NAME,
+    CONF_TOKEN,
 )
 
 from homeassistant.helpers.update_coordinator import (
@@ -61,7 +62,7 @@ class BasePranaSwitch(CoordinatorEntity, SwitchEntity):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
         self.async_write_ha_state()
-    
+
     @property
     def available(self):
         """Return state of the fan."""
@@ -97,7 +98,7 @@ class PranaHeating(BasePranaSwitch):
     async def async_turn_off(self, **kwargs) -> None:
         """Turn off the entity."""
         await self.coordinator.set_heating(False)
-    
+
     @property
     def unique_id(self) -> str:
         """Return a unique, Home Assistant friendly identifier for this entity."""
