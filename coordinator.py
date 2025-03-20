@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-import binascii 
+import binascii
 import async_timeout
 
 from homeassistant.components import bluetooth
@@ -147,6 +147,10 @@ class PranaCoordinator(DataUpdateCoordinator):
         self.sensors: Optional[PranaSensorsState] = None
         self.timestamp: Optional[datetime.datetime] = None
         self.lastRead = None
+        self.humidity = None
+        self.pressure = None
+        self.temperature_in = None
+        self.temperature_out = None
         self.co2 = None
         self.voc = None
         self.air_in = None
@@ -302,7 +306,7 @@ class PranaCoordinator(DataUpdateCoordinator):
     async def toggle_auto_mode(self):
         self.auto_mode = not self.auto_mode
         return await self._write(self.Cmd.AUTO_MODE)
-    
+
     @retry_bluetooth_connection_error
     async def set_auto_mode(self):
         if not self.auto_mode:
@@ -369,9 +373,13 @@ class PranaCoordinator(DataUpdateCoordinator):
             dict_state = state.to_dict()
             for key in dict_state:
                 setattr(self, key, dict_state[key])
+            if state.sensors is not None:
+                sensors = state.sensors.to_dict()
+                for key in sensors:
+                    setattr(self, key, sensors[key])
             LOGGER.debug("Send update event %s", dict_state)
             await self.async_request_refresh()
-            
+
 
 # NEW DATA END
 
@@ -419,7 +427,7 @@ class PranaCoordinator(DataUpdateCoordinator):
 
             LOGGER.debug("%s: Subscribe to notifications; RSSI: %s", self.name, self.rssi)
             await client.start_notify(self._read_uuid, self._notification_handler)
-    
+
 
     def _reset_disconnect_timer(self) -> None:
         """Reset disconnect timer."""
@@ -446,7 +454,7 @@ class PranaCoordinator(DataUpdateCoordinator):
         """Stop the LEDBLE."""
         # LOGGER.debug("%s: Stop", self.name)
         await self._execute_disconnect()
-        
+
     async def _execute_timed_disconnect(self) -> None:
         """Execute timed disconnection."""
         LOGGER.debug(
