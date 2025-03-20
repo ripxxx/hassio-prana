@@ -84,6 +84,7 @@ class PranaFan(CoordinatorEntity, FanEntity):
         """Provide attributes for display on device card."""
         LOGGER.debug("Setting device attributes")
         attributes = {
+            "brightness": self.coordinator.brightness,
             "humidity": self.coordinator.humidity,
             "pressure": self.coordinator.pressure,
             "temperature_in": self.coordinator.temperature_in,
