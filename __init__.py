@@ -13,13 +13,13 @@ from .const import DOMAIN
 from .coordinator import PranaCoordinator
 import logging
 
-PLATFORMS = ["fan", "switch"]
+PLATFORMS = ["fan", "number", "switch"]
 CLIENT = "client"
 CONFIG = "config"
 SENSOR_TYPES = {
     "voc": ["VOC", "ppb", "mdi:gauge"],
     "co2": ["CO2", "ppm", "mdi:gauge"],
-    
+
     # "temperature": ["Temperature", "°C", "mdi:thermometer"],
     # "humidity": ["Humidity", "%", "mdi:water-percent"],
     "speed": ["Speed", "level", "mdi:gauge"],
