@@ -241,8 +241,9 @@ class PranaCoordinator(DataUpdateCoordinator):
     async def set_brightness(self, brightness: int):
         if brightness < 0 or brightness > 6:
             raise ValueError("brightness value must be in range 0-6")
-        original_state = await self.get_status_details()
-        original_brightness = none_throws(original_state.brightness)
+        #original_state = await self.get_status_details()
+        #original_brightness = none_throws(original_state.brightness)
+        original_brightness = self.brightness
         if brightness == original_brightness:
             return
         if brightness > original_brightness:
