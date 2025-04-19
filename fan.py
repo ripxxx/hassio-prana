@@ -1,6 +1,7 @@
 """Support for Prana fan."""
 from . import DOMAIN
 
+import asyncio
 from datetime import datetime, timedelta
 import logging
 import math
@@ -31,16 +32,85 @@ from homeassistant.util.percentage import (
     ranged_value_to_percentage,
 )
 
+import voluptuous as vol
+import homeassistant.helpers.config_validation as cv
+
+from .const import PranaState, Speed, PranaSensorsState, Display
+
 LOGGER = logging.getLogger(__name__)
 
 SPEED_AUTO = "auto"
 SPEED_MANUAL = "manual"
-SPEED_RANGE = (1, 10)
+SPEED_RANGE = (1, 5)
+
+DATA_KEY = "fan.prana"
+
+PRANA_SERVICE_BASE_SCHEMA = vol.Schema({vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
+
+PRANA_SERVICE_SET_SPEED_SCHEMA = PRANA_SERVICE_BASE_SCHEMA.extend(
+    {
+        vol.Required("speed") : vol.All(vol.Coerce(int), vol.Clamp(min=0, max=6))
+    }
+)
+
+PRANA_SERVICE_SET_BRIGHTNESS_SCHEMA = PRANA_SERVICE_BASE_SCHEMA.extend(
+    {
+        vol.Required("brightness") : vol.All(vol.Coerce(int), vol.Clamp(min=0, max=6))
+    }
+)
+
+PRANA_SERVICE_SET_DISPLAY_SCHEMA = PRANA_SERVICE_BASE_SCHEMA.extend(
+    {
+        vol.Required("display") : vol.All(vol.Coerce(int), vol.Clamp(min=0, max=10))
+    }
+)
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    async_add_devices([PranaFan(coordinator, config_entry)])
+    if DATA_KEY not in hass.data:
+        hass.data[DATA_KEY] = {}
+
+    devices = []
+
+    device = PranaFan(coordinator, config_entry)
+
+    devices.append(device)
+    hass.data[DATA_KEY][config_entry.entry_id] = device
+
+    async_add_devices(devices)
+
+    async def async_service_handler(service):
+        """Map services to methods on XiaomiAirPurifier."""
+        method = "async_" + service.service
+        params = {
+            key: value for key, value in service.data.items() if key != ATTR_ENTITY_ID
+        }
+        entity_ids = service.data.get(ATTR_ENTITY_ID)
+        if entity_ids:
+            devices = [
+                device
+                for device in hass.data[DATA_KEY].values()
+                if device.entity_id in entity_ids
+            ]
+        else:
+            devices = hass.data[DATA_KEY].values()
+
+        update_tasks = []
+        for device in devices:
+            if not hasattr(device, method):
+                continue
+            await getattr(device, method)(**params)
+            update_tasks.append(asyncio.create_task(device.async_update_ha_state(True)))
+
+        if update_tasks:
+            await asyncio.wait(update_tasks)
+
+    hass.services.async_register(DOMAIN, "set_speed", async_service_handler, schema=PRANA_SERVICE_SET_SPEED_SCHEMA)
+    hass.services.async_register(DOMAIN, "set_speed_in", async_service_handler, schema=PRANA_SERVICE_SET_SPEED_SCHEMA)
+    hass.services.async_register(DOMAIN, "set_speed_out", async_service_handler, schema=PRANA_SERVICE_SET_SPEED_SCHEMA)
+    hass.services.async_register(DOMAIN, "set_brightness", async_service_handler, schema=PRANA_SERVICE_SET_BRIGHTNESS_SCHEMA)
+    hass.services.async_register(DOMAIN, "set_display", async_service_handler, schema=PRANA_SERVICE_SET_DISPLAY_SCHEMA)
 
 class PranaFan(CoordinatorEntity, FanEntity):
     """Representation of a Prana fan."""
@@ -92,7 +162,9 @@ class PranaFan(CoordinatorEntity, FanEntity):
             "co2": self.coordinator.co2,
             "voc": self.coordinator.voc,
             "auto_mode": self.coordinator.auto_mode,
+            "auto_mode_plus": self.coordinator.auto_mode_plus,
             "night_mode": self.coordinator.night_mode,
+            "boost_mode": self.coordinator.boost_mode,
             "thaw_on": self.coordinator.winter_mode_enabled,
             "heater_on": self.coordinator.mini_heating_enabled,
             "speed_in&out": self.coordinator.speed_locked,
@@ -101,6 +173,10 @@ class PranaFan(CoordinatorEntity, FanEntity):
             "air_in": self.coordinator.is_input_fan_on,
             "air_out": self.coordinator.is_output_fan_on,
             "last_updated": self.coordinator.lastRead,
+            "flows_locked": self.coordinator.flows_locked,
+            "display": self.coordinator.display,
+            "timer_on": self.coordinator.timer_on,
+            "timer": self.coordinator.timer,
         }
         return attributes
 
@@ -205,3 +281,18 @@ class PranaFan(CoordinatorEntity, FanEntity):
             return "reverse"
         else:
             return "reverse & forward"
+
+    async def async_set_brightness(self, brightness: int):
+        await self.coordinator.set_brightness(brightness)
+
+    async def async_set_speed(self, speed: int):
+        await self.coordinator.set_speed(speed)
+
+    async def async_set_speed_in(self, speed: int):
+        await self.coordinator.set_speed_in(speed)
+
+    async def async_set_speed_out(self, speed: int):
+        await self.coordinator.set_speed_out(speed)
+
+    async def async_set_display(self, display: int):
+        await self.coordinator.set_display(Display(display))

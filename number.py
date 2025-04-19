@@ -3,6 +3,13 @@ from homeassistant.components.number import (
     NumberEntity,
 )
 
+from homeassistant.components.sensor import (
+    DOMAIN as ENTITY_DOMAIN,
+    SensorEntity,
+    SensorDeviceClass,
+    SensorStateClass,
+)
+
 """Support for Prana fan."""
 from . import DOMAIN
 
@@ -38,10 +45,21 @@ from homeassistant.util.percentage import (
 
 LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass, config_entry, async_add_devices):
+async def async_setup_entry(hass, config_entry, async_add_entities):
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    async_add_devices([PranaBrightness(hass, coordinator, config_entry.data["name"], config_entry.entry_id)])
+    controls_to_add = []
+
+    controls_to_add.append(PranaBrightness(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+    controls_to_add.append(PranaSpeedIn(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+    controls_to_add.append(PranaSpeedOut(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+    controls_to_add.append(PranaSpeed(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+
+    #Test
+    #controls_to_add.append(PranaTestByte4(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+    #Test
+
+    async_add_entities(controls_to_add)
 
 class BasePranaNumber(CoordinatorEntity, NumberEntity):
     # Implement one of these methods.
@@ -82,7 +100,7 @@ class PranaBrightness(BasePranaNumber):
     @property
     def name(self) -> str:
         """Return the name of the control."""
-        return self._name + " brightness"
+        return "Brightness"
 
     @property
     def native_max_value(self):
@@ -107,7 +125,7 @@ class PranaBrightness(BasePranaNumber):
 
     @property
     def native_unit_of_measurement(self):
-        return "%"
+        return ""
 
     async def async_set_native_value(self, value: float) -> None:
         await self.coordinator.set_brightness(value)
@@ -115,4 +133,189 @@ class PranaBrightness(BasePranaNumber):
     @property
     def unique_id(self) -> str:
         """Return a unique, Home Assistant friendly identifier for this entity."""
-        return self.coordinator.mac.replace(":", "")+ "_brightness"
+        return self._name + "_brightness"
+
+class PranaSpeedIn(BasePranaNumber):
+    @property
+    def name(self) -> str:
+        """Return the name of the control."""
+        return "Speed In"
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.SPEED
+
+    @property
+    def native_max_value(self):
+        return 6
+
+    @property
+    def native_min_value(self):
+        return 0
+
+    @property
+    def native_step(self):
+        return 1
+
+    @property
+    def mode(self):
+        return "slider"
+
+    @property
+    def available(self):
+        return not self.coordinator.flows_locked
+
+    @property
+    def native_value(self):
+        """Return in level of the fan."""
+        if self.coordinator.is_input_fan_on:
+            return self.coordinator.speed_in
+        return 0
+
+    @property
+    def native_unit_of_measurement(self):
+        return ""
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self.coordinator.set_speed_in(value)
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique, Home Assistant friendly identifier for this entity."""
+        return self._name + "_speed_in"
+
+class PranaSpeedOut(BasePranaNumber):
+    @property
+    def name(self) -> str:
+        """Return the name of the control."""
+        return "Speed Out"
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.SPEED
+
+    @property
+    def native_max_value(self):
+        return 6
+
+    @property
+    def native_min_value(self):
+        return 0
+
+    @property
+    def native_step(self):
+        return 1
+
+    @property
+    def mode(self):
+        return "slider"
+
+    @property
+    def available(self):
+        return not self.coordinator.flows_locked
+
+    @property
+    def native_value(self):
+        """Return out level of the fan."""
+        if self.coordinator.is_output_fan_on:
+            return self.coordinator.speed_out
+        return 0
+
+    @property
+    def native_unit_of_measurement(self):
+        return ""
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self.coordinator.set_speed_out(value)
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique, Home Assistant friendly identifier for this entity."""
+        return self._name + "_speed_out"
+
+class PranaSpeed(BasePranaNumber):
+    @property
+    def name(self) -> str:
+        """Return the name of the control."""
+        return "Speed"
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.SPEED
+
+    @property
+    def native_max_value(self):
+        return 6
+
+    @property
+    def native_min_value(self):
+        return 0
+
+    @property
+    def native_step(self):
+        return 1
+
+    @property
+    def mode(self):
+        return "slider"
+
+    @property
+    def available(self):
+        return self.coordinator.flows_locked
+
+    @property
+    def native_value(self):
+        """Return out level of the fan."""
+        return self.coordinator.speed_locked
+
+    @property
+    def native_unit_of_measurement(self):
+        return ""
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self.coordinator.set_speed(value)
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique, Home Assistant friendly identifier for this entity."""
+        return self._name + "_speed"
+
+#Test
+class PranaTestByte4(BasePranaNumber):
+    @property
+    def name(self) -> str:
+        """Return the name of the control."""
+        return "Test Byte4"
+
+    @property
+    def native_max_value(self):
+        return 255
+
+    @property
+    def native_min_value(self):
+        return 0
+
+    @property
+    def native_step(self):
+        return 1
+
+    @property
+    def mode(self):
+        return "box"
+
+    @property
+    def available(self):
+        return True
+
+    @property
+    def native_value(self):
+        return self.coordinator.byte4
+
+    async def async_set_native_value(self, value: float) -> None:
+        self.coordinator.byte4 = int(value)
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique, Home Assistant friendly identifier for this entity."""
+        return self._name + "_test_byte4"
+#Test

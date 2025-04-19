@@ -11,7 +11,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
-from .const import PranaState, Speed, PranaSensorsState
+from .const import PranaState, Speed, PranaSensorsState, Display, PranaTimer
 
 from typing import Dict, List, Union, Optional
 from bleak.backends.device import BLEDevice
@@ -85,28 +85,121 @@ class PranaCoordinator(DataUpdateCoordinator):
     MAX_BRIGHTNESS = 6
 
     class Cmd:
-        ENABLE_HIGH_SPEED = bytearray([0xBE, 0xEF, 0x04, 0x07])
-        ENABLE_NIGHT_MODE = bytearray([0xBE, 0xEF, 0x04, 0x06])
-        TOGGLE_FLOW_LOCK = bytearray([0xBE, 0xEF, 0x04, 0x09])
-        TOGGLE_HEATING = bytearray([0xBE, 0xEF, 0x04, 0x05])
-        TOGGLE_WINTER_MODE = bytearray([0xBE, 0xEF, 0x04, 0x16])
+        STOP = bytearray([0xBE, 0xEF, 0x04, 0x01])
 
-        SPEED_UP = bytearray([0xBE, 0xEF, 0x04, 0x0C])
+        CHANGE_BRIGHTNESS = bytearray([0xBE, 0xEF, 0x04, 0x02])
+
+        TOGGLE_HEATING = bytearray([0xBE, 0xEF, 0x04, 0x05])
+        TOGGLE_NIGHT_MODE = bytearray([0xBE, 0xEF, 0x04, 0x06])
+        TOGGLE_BOOST_MODE = bytearray([0xBE, 0xEF, 0x04, 0x07])
+
+        TOGGLE_FLOW_LOCK = bytearray([0xBE, 0xEF, 0x04, 0x09])
+
+        START = bytearray([0xBE, 0xEF, 0x04, 0x0A])
+
         SPEED_DOWN = bytearray([0xBE, 0xEF, 0x04, 0x0B])
+        SPEED_UP = bytearray([0xBE, 0xEF, 0x04, 0x0C])
+
+        FLOW_IN_OFF = bytearray([0xBE, 0xEF, 0x04, 0x0D])
+
         SPEED_IN_UP = bytearray([0xBE, 0xEF, 0x04, 0x0E])
         SPEED_IN_DOWN = bytearray([0xBE, 0xEF, 0x04, 0x0F])
+
+        FLOW_OUT_OFF = bytearray([0xBE, 0xEF, 0x04, 0x10])
+
         SPEED_OUT_UP = bytearray([0xBE, 0xEF, 0x04, 0x11])
         SPEED_OUT_DOWN = bytearray([0xBE, 0xEF, 0x04, 0x12])
 
-        FLOW_IN_OFF = bytearray([0xBE, 0xEF, 0x04, 0x0D])
-        FLOW_OUT_OFF = bytearray([0xBE, 0xEF, 0x04, 0x10])
+        TOGGLE_TIMER = bytearray([0xBE, 0xEF, 0x04, 0x13])
+        TIMER_DOWN_START = bytearray([0xBE, 0xEF, 0x04, 0x14])
+        TIMER_UP_START = bytearray([0xBE, 0xEF, 0x04, 0x15])
 
-        START = bytearray([0xBE, 0xEF, 0x04, 0x0A])
-        STOP = bytearray([0xBE, 0xEF, 0x04, 0x01])
+        TOGGLE_WINTER_MODE = bytearray([0xBE, 0xEF, 0x04, 0x16])
+        AUTO_MODE = bytearray([0xBE, 0xEF, 0x04, 0x18])
+
+        DISPLAY_LEFT = bytearray([0xBE, 0xEF, 0x04, 0x19])
+        DISPLAY_RIGHT = bytearray([0xBE, 0xEF, 0x04, 0x1A])
+
+        SPEED_IN_1 = bytearray([0xBE, 0xEF, 0x04, 0x1F])
+        SPEED_IN_2 = bytearray([0xBE, 0xEF, 0x04, 0x20])
+        SPEED_IN_3 = bytearray([0xBE, 0xEF, 0x04, 0x21])
+        SPEED_IN_4 = bytearray([0xBE, 0xEF, 0x04, 0x22])
+        SPEED_IN_5 = bytearray([0xBE, 0xEF, 0x04, 0x23])
+        SPEED_IN_BOOST_1 = bytearray([0xBE, 0xEF, 0x04, 0x24])
+        SPEED_IN_BOOST_2 = bytearray([0xBE, 0xEF, 0x04, 0x25])
+        SPEED_IN_BOOST_3 = bytearray([0xBE, 0xEF, 0x04, 0x26])
+        SPEED_IN_BOOST_4 = bytearray([0xBE, 0xEF, 0x04, 0x27])
+        SPEED_IN_BOOST_5 = bytearray([0xBE, 0xEF, 0x04, 0x28])
+
+        SPEED_OUT_1 = bytearray([0xBE, 0xEF, 0x04, 0x29])
+        SPEED_OUT_2 = bytearray([0xBE, 0xEF, 0x04, 0x2A])
+        SPEED_OUT_3 = bytearray([0xBE, 0xEF, 0x04, 0x2B])
+        SPEED_OUT_4 = bytearray([0xBE, 0xEF, 0x04, 0x2C])
+        SPEED_OUT_5 = bytearray([0xBE, 0xEF, 0x04, 0x2D])
+        SPEED_OUT_BOOST_1 = bytearray([0xBE, 0xEF, 0x04, 0x2E])
+        SPEED_OUT_BOOST_2 = bytearray([0xBE, 0xEF, 0x04, 0x2F])
+        SPEED_OUT_BOOST_3 = bytearray([0xBE, 0xEF, 0x04, 0x30])
+        SPEED_OUT_BOOST_4 = bytearray([0xBE, 0xEF, 0x04, 0x31])
+        SPEED_OUT_BOOST_5 = bytearray([0xBE, 0xEF, 0x04, 0x32])
+
+        SPEED_1 = bytearray([0xBE, 0xEF, 0x04, 0x33])
+        SPEED_2 = bytearray([0xBE, 0xEF, 0x04, 0x34])
+        SPEED_3 = bytearray([0xBE, 0xEF, 0x04, 0x35])
+        SPEED_4 = bytearray([0xBE, 0xEF, 0x04, 0x36])
+        SPEED_5 = bytearray([0xBE, 0xEF, 0x04, 0x37])
+        SPEED_BOOST_1 = bytearray([0xBE, 0xEF, 0x04, 0x38])
+        SPEED_BOOST_2 = bytearray([0xBE, 0xEF, 0x04, 0x39])
+        SPEED_BOOST_3 = bytearray([0xBE, 0xEF, 0x04, 0x3A])
+        SPEED_BOOST_4 = bytearray([0xBE, 0xEF, 0x04, 0x3B])
+        SPEED_BOOST_5 = bytearray([0xBE, 0xEF, 0x04, 0x3C])
+
+        TOGGLE_AUTO_MODE_2 = bytearray([0xBE, 0xEF, 0x04, 0x43])
+        TOGGLE_AUTO_PLUS_MODE = bytearray([0xBE, 0xEF, 0x04, 0x44])
+
+        DISPLAY_TEMPERATURE_IN_LOCKED = bytearray([0xBE, 0xEF, 0x04, 0x47])
+        DISPLAY_TEMPERATURE_OUT_LOCKED = bytearray([0xBE, 0xEF, 0x04, 0x48])
+        DISPLAY_CO2_LOCKED = bytearray([0xBE, 0xEF, 0x04, 0x49])
+        DISPLAY_VOC_LOCKED = bytearray([0xBE, 0xEF, 0x04, 0x4A])
+        DISPLAY_HUMIDITY_LOCKED = bytearray([0xBE, 0xEF, 0x04, 0x4B])
+        DISPLAY_PRESURE_LOCKED = bytearray([0xBE, 0xEF, 0x04, 0x4C])
+        DISPLAY_COMPATIBILITY_LOCKED = bytearray([0xBE, 0xEF, 0x04, 0x4D])
+        DISPLAY_ALL_SYMBOLS_LOCKED = bytearray([0xBE, 0xEF, 0x04, 0x4E])
+
+        TIMER_STOP = bytearray([0xBE, 0xEF, 0x04, 0x50])
+        TIMER_START_10M = bytearray([0xBE, 0xEF, 0x04, 0x51])
+        TIMER_START_20M = bytearray([0xBE, 0xEF, 0x04, 0x52])
+        TIMER_START_30M = bytearray([0xBE, 0xEF, 0x04, 0x53])
+        TIMER_START_1H = bytearray([0xBE, 0xEF, 0x04, 0x54])
+        TIMER_START_1H30M = bytearray([0xBE, 0xEF, 0x04, 0x55])
+        TIMER_START_2H = bytearray([0xBE, 0xEF, 0x04, 0x56])
+        TIMER_START_3H = bytearray([0xBE, 0xEF, 0x04, 0x57])
+        TIMER_START_5H = bytearray([0xBE, 0xEF, 0x04, 0x58])
+        TIMER_START_9H = bytearray([0xBE, 0xEF, 0x04, 0x59])
+
+        DISPLAY_FAN = bytearray([0xBE, 0xEF, 0x04, 0x5A])
+        DISPLAY_TEMPERATURE_IN = bytearray([0xBE, 0xEF, 0x04, 0x5B])
+        DISPLAY_TEMPERATURE_OUT = bytearray([0xBE, 0xEF, 0x04, 0x5C])
+        DISPLAY_CO2 = bytearray([0xBE, 0xEF, 0x04, 0x5D])
+        DISPLAY_VOC = bytearray([0xBE, 0xEF, 0x04, 0x5E])
+        DISPLAY_HUMIDITY = bytearray([0xBE, 0xEF, 0x04, 0x5F])
+        DISPLAY_QUALITY_FAN = bytearray([0xBE, 0xEF, 0x04, 0x60])
+        DISPLAY_PRESURE = bytearray([0xBE, 0xEF, 0x04, 0x61])
+        DISPLAY_FAN_2 = bytearray([0xBE, 0xEF, 0x04, 0x62])
+        DISPLAY_DATE = bytearray([0xBE, 0xEF, 0x04, 0x63])
+        DISPLAY_TIME = bytearray([0xBE, 0xEF, 0x04, 0x64])
+
+        SET_BRIGHTNESS_0 = bytearray([0xBE, 0xEF, 0x04, 0x6E])
+        SET_BRIGHTNESS_1 = bytearray([0xBE, 0xEF, 0x04, 0x6F])
+        SET_BRIGHTNESS_2 = bytearray([0xBE, 0xEF, 0x04, 0x70])
+        SET_BRIGHTNESS_3 = bytearray([0xBE, 0xEF, 0x04, 0x71])
+        SET_BRIGHTNESS_4 = bytearray([0xBE, 0xEF, 0x04, 0x72])
+        SET_BRIGHTNESS_5 = bytearray([0xBE, 0xEF, 0x04, 0x73])
+        SET_BRIGHTNESS_6 = bytearray([0xBE, 0xEF, 0x04, 0x74])
+
         READ_STATE = bytearray([0xBE, 0xEF, 0x05, 0x01, 0x00, 0x00, 0x00, 0x00, 0x5A])
         READ_DEVICE_DETAILS = bytearray([0xBE, 0xEF, 0x05, 0x02, 0x00, 0x00, 0x00, 0x00, 0x5A])
-        CHANGE_BRIGHTNESS = bytearray([0xBE, 0xEF, 0x04, 0x02])
-        AUTO_MODE = bytearray([0xBE, 0xEF, 0x04, 0x18])
+
+
 
     def __init__(self, address, hass) -> None:
         """Initialize prana coordinator."""
@@ -136,6 +229,7 @@ class PranaCoordinator(DataUpdateCoordinator):
         self.speed_in: Optional[int] = None
         self.speed_out: Optional[int] = None
         self.night_mode: Optional[bool] = None
+        self.boost_mode: Optional[bool] = None
         self.auto_mode: Optional[bool] = None
         self.flows_locked: Optional[bool] = None
         self.is_on: Optional[bool] = None
@@ -156,6 +250,11 @@ class PranaCoordinator(DataUpdateCoordinator):
         self.air_in = None
         self.isAirInOn = None
         self.isAirOutOn = None
+        self.display = None
+
+        #Test
+        self.byte4: int = 0
+        #Test
 
     async def _async_update_data(self):
         """Fetch data from device."""
@@ -189,25 +288,49 @@ class PranaCoordinator(DataUpdateCoordinator):
         return self._device.rssi
 
 # NEW DATA
-    # @retry_bluetooth_connection_error
-    # async def set_high_speed(self):
-    #     await self._write(self.Cmd.ENABLE_HIGH_SPEED)
+    @retry_bluetooth_connection_error
+    async def toggle_boost_mode(self):
+        await self._write(self.Cmd.TOGGLE_BOOST_MODE)
 
     @retry_bluetooth_connection_error
     async def speed_up(self):
         await self._write(self.Cmd.SPEED_UP)
 
     @retry_bluetooth_connection_error
+    async def speed_in_up(self):
+        await self._write(self.Cmd.SPEED_IN_UP)
+
+    @retry_bluetooth_connection_error
+    async def speed_out_up(self):
+        await self._write(self.Cmd.SPEED_OUT_UP)
+
+    @retry_bluetooth_connection_error
     async def speed_down(self):
         await self._write(self.Cmd.SPEED_DOWN)
 
     @retry_bluetooth_connection_error
+    async def speed_in_down(self):
+        await self._write(self.Cmd.SPEED_IN_DOWN)
+
+    @retry_bluetooth_connection_error
+    async def speed_out_down(self):
+        await self._write(self.Cmd.SPEED_OUT_DOWN)
+
+    @retry_bluetooth_connection_error
     async def set_low_speed(self):
-        await self._write(self.Cmd.ENABLE_NIGHT_MODE)
+        await self._write(self.Cmd.TOGGLE_NIGHT_MODE)
+
+    @retry_bluetooth_connection_error
+    async def toggle_night_mode(self):
+        await self._write(self.Cmd.TOGGLE_NIGHT_MODE)
 
     @retry_bluetooth_connection_error
     async def set_night_mode(self):
-        await self._write(self.Cmd.ENABLE_NIGHT_MODE)
+        await self._write(self.Cmd.TOGGLE_NIGHT_MODE)
+
+    @retry_bluetooth_connection_error
+    async def toggle_flow_lock(self):
+        await self._write(self.Cmd.TOGGLE_FLOW_LOCK)
 
     @retry_bluetooth_connection_error
     async def set_normal_speed(self):
@@ -218,41 +341,145 @@ class PranaCoordinator(DataUpdateCoordinator):
         return await self._write(self.Cmd.READ_STATE)
 
     @retry_bluetooth_connection_error
+    async def set_display(self, display: int):
+        if display == Display.FAN:
+            await self._write(self.Cmd.DISPLAY_FAN)
+        elif display == Display.TEMPERATURE_IN:
+            await self._write(self.Cmd.DISPLAY_TEMPERATURE_IN)
+        elif display == Display.TEMPERATURE_OUT:
+            await self._write(self.Cmd.DISPLAY_TEMPERATURE_OUT)
+        elif display == Display.CO2:
+            await self._write(self.Cmd.DISPLAY_CO2)
+        elif display == Display.VOC:
+            await self._write(self.Cmd.DISPLAY_VOC)
+        elif display == Display.HUMIDITY:
+            await self._write(self.Cmd.DISPLAY_HUMIDITY)
+        elif display == Display.QUALITY_FAN:
+            await self._write(self.Cmd.DISPLAY_QUALITY_FAN)
+        elif display == Display.PRESURE:
+            await self._write(self.Cmd.DISPLAY_PRESURE)
+        elif display == Display.FAN_2:
+            await self._write(self.Cmd.DISPLAY_FAN_2)
+        elif display == Display.DATE:
+            await self._write(self.Cmd.DISPLAY_DATE)
+        elif display == Display.TIME:
+            await self._write(self.Cmd.DISPLAY_TIME)
+
+    @retry_bluetooth_connection_error
     async def set_speed(self, speed: int):
         if (speed == self.speed):
             return
 
-        if not self.is_on:
+        if speed > 0 and not self.is_on:
             await self.turn_on()
 
-        direction_up = speed > self.speed
-        counter = self.speed
-        if direction_up:
-            while counter < speed:
-                await self.speed_up()
-                counter += 1
-        else:
-            while counter > speed:
-                await self.speed_down()
-                counter -= 1
+        if speed == 0:
+            await self.turn_off()
+        elif speed == 1:
+            await self._write(self.Cmd.SPEED_1)
+        elif speed == 2:
+            await self._write(self.Cmd.SPEED_2)
+        elif speed == 3:
+            await self._write(self.Cmd.SPEED_3)
+        elif speed == 4:
+            await self._write(self.Cmd.SPEED_4)
+        elif speed == 5:
+            await self._write(self.Cmd.SPEED_5)
+        elif speed == 6:
+            await self._write(self.Cmd.SPEED_BOOST_5)
+
         self.speed = speed
+
+    @retry_bluetooth_connection_error
+    async def set_speed_in(self, speed: int):
+        if (speed == self.speed_in):
+            return
+
+        if speed > 0 and not self.is_on:
+            await self.turn_on()
+
+        if speed == 0:
+            await self._write(self.Cmd.FLOW_IN_OFF)
+        elif speed == 1:
+            await self._write(self.Cmd.SPEED_IN_1)
+        elif speed == 2:
+            await self._write(self.Cmd.SPEED_IN_2)
+        elif speed == 3:
+            await self._write(self.Cmd.SPEED_IN_3)
+        elif speed == 4:
+            await self._write(self.Cmd.SPEED_IN_4)
+        elif speed == 5:
+            await self._write(self.Cmd.SPEED_IN_5)
+        elif speed == 6:
+            await self._write(self.Cmd.SPEED_IN_BOOST_5)
+
+    @retry_bluetooth_connection_error
+    async def set_speed_out(self, speed: int):
+        if (speed == self.speed_out):
+            return
+
+        if speed > 0 and not self.is_on:
+            await self.turn_on()
+
+        if speed == 0:
+            await self._write(self.Cmd.FLOW_OUT_OFF)
+        elif speed == 1:
+            await self._write(self.Cmd.SPEED_OUT_1)
+        elif speed == 2:
+            await self._write(self.Cmd.SPEED_OUT_2)
+        elif speed == 3:
+            await self._write(self.Cmd.SPEED_OUT_3)
+        elif speed == 4:
+            await self._write(self.Cmd.SPEED_OUT_4)
+        elif speed == 5:
+            await self._write(self.Cmd.SPEED_OUT_5)
+        elif speed == 6:
+            await self._write(self.Cmd.SPEED_OUT_BOOST_5)
+
+    @retry_bluetooth_connection_error
+    async def set_timer(self, timer: int):
+        if timer == PranaTimer.STOP:
+            await self._write(self.Cmd.TIMER_STOP)
+        elif timer == PranaTimer.RUN:
+            await self._write(self.Cmd.TIMER_START_10M)
+        elif timer == PranaTimer.RUN_10M:
+            await self._write(self.Cmd.TIMER_START_10M)
+        elif timer == PranaTimer.RUN_20M:
+            await self._write(self.Cmd.TIMER_START_20M)
+        elif timer == PranaTimer.RUN_30M:
+            await self._write(self.Cmd.TIMER_START_30M)
+        elif timer == PranaTimer.RUN_1H:
+            await self._write(self.Cmd.TIMER_START_1H)
+        elif timer == PranaTimer.RUN_1H30M:
+            await self._write(self.Cmd.TIMER_START_1H30M)
+        elif timer == PranaTimer.RUN_2H:
+            await self._write(self.Cmd.TIMER_START_2H)
+        elif timer == PranaTimer.RUN_3H:
+            await self._write(self.Cmd.TIMER_START_3H)
+        elif timer == PranaTimer.RUN_5H:
+            await self._write(self.Cmd.TIMER_START_5H)
+        elif timer == PranaTimer.RUN_9H:
+            await self._write(self.Cmd.TIMER_START_9H)
 
     @retry_bluetooth_connection_error
     async def set_brightness(self, brightness: int):
         if brightness < 0 or brightness > 6:
             raise ValueError("brightness value must be in range 0-6")
-        #original_state = await self.get_status_details()
-        #original_brightness = none_throws(original_state.brightness)
-        original_brightness = self.brightness
-        if brightness == original_brightness:
-            return
-        if brightness > original_brightness:
-            counter = brightness - original_brightness
-        else:
-            counter = brightness + (self.MAX_BRIGHTNESS - original_brightness)
-        while counter > 0:
-            await self.brightness_up()
-            counter -= 1
+
+        if brightness == 0:
+            await self._write(self.Cmd.SET_BRIGHTNESS_0)
+        elif brightness == 1:
+            await self._write(self.Cmd.SET_BRIGHTNESS_1)
+        elif brightness == 2:
+            await self._write(self.Cmd.SET_BRIGHTNESS_2)
+        elif brightness == 3:
+            await self._write(self.Cmd.SET_BRIGHTNESS_3)
+        elif brightness == 4:
+            await self._write(self.Cmd.SET_BRIGHTNESS_4)
+        elif brightness == 5:
+            await self._write(self.Cmd.SET_BRIGHTNESS_5)
+        elif brightness == 6:
+            await self._write(self.Cmd.SET_BRIGHTNESS_6)
 
     @retry_bluetooth_connection_error
     async def set_brightness_pct(self, brightness_pct: int):
@@ -268,6 +495,12 @@ class PranaCoordinator(DataUpdateCoordinator):
     @retry_bluetooth_connection_error
     async def brightness_up(self):
         await self._write(self.Cmd.CHANGE_BRIGHTNESS)
+
+    @retry_bluetooth_connection_error
+    async def test(self):
+        command = [0xBE, 0xEF, 0x04]
+        command.append(self.byte4)
+        await self._write(command)
 
     @retry_bluetooth_connection_error
     async def set_heating(self, enable: bool):
@@ -306,7 +539,12 @@ class PranaCoordinator(DataUpdateCoordinator):
     @retry_bluetooth_connection_error
     async def toggle_auto_mode(self):
         self.auto_mode = not self.auto_mode
-        return await self._write(self.Cmd.AUTO_MODE)
+        return await self._write(self.Cmd.TOGGLE_AUTO_MODE_2)
+
+    @retry_bluetooth_connection_error
+    async def toggle_auto_plus_mode(self):
+        self.auto_mode = not self.auto_mode
+        return await self._write(self.Cmd.TOGGLE_AUTO_PLUS_MODE)
 
     @retry_bluetooth_connection_error
     async def set_auto_mode(self):
@@ -318,20 +556,29 @@ class PranaCoordinator(DataUpdateCoordinator):
     def __parse_state(self, data: bytearray) -> Optional[PranaState]:
         if not data[:2] == self.STATE_MSG_PREFIX:
             return None
+        LOGGER.warning("%s %s %s %s %s %s", data[36], data[37], data[38], data[39], data[40], data[41])
+        #LOGGER.warning("DATA SIZE: %s", len(data))#137
+        LOGGER.warning(''.join(format(x, '02x') + ' ' for x in data))
+
         s = PranaState()
         s.timestamp = datetime.now()
         s.brightness = int(log2(data[12]) + 1)
         s.speed_locked = int(data[26] / 10)
         s.speed_in = int(data[30] / 10)
         s.speed_out = int(data[34] / 10)
-        s.auto_mode = bool(data[20])
+        s.auto_mode = bool(data[20] & 1)
+        s.auto_mode_plus = bool(data[20] & 2)
         s.night_mode = bool(data[16])
+        s.boost_mode = bool(data[18])
         s.flows_locked = bool(data[22])
         s.is_on = bool(data[10])
         s.mini_heating_enabled = bool(data[14])
         s.winter_mode_enabled = bool(data[42])
         s.is_input_fan_on = bool(data[28])
         s.is_output_fan_on = bool(data[32])
+        s.display = Display(int(data[99]))
+        s.timer_on = bool(data[38])
+        s.timer = ((int(data[39]) << 8) + int(data[40]))
 
         if not self.is_on:
             self.speed = 0

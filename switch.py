@@ -38,12 +38,21 @@ from homeassistant.util.percentage import (
 
 LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass, config_entry, async_add_devices):
+async def async_setup_entry(hass, config_entry, async_add_entities):
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    async_add_devices([PranaHeating(hass, coordinator, config_entry.data["name"], config_entry.entry_id)])
-    async_add_devices([PranaWinterMode(hass, coordinator, config_entry.data["name"], config_entry.entry_id)])
-    async_add_devices([PranaAutoMode(hass, coordinator, config_entry.data["name"], config_entry.entry_id)])
+    controls_to_add = []
+
+    controls_to_add.append(PranaHeating(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+    controls_to_add.append(PranaWinterMode(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+    controls_to_add.append(PranaAutoMode(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+    controls_to_add.append(PranaFlowLock(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+
+    controls_to_add.append(PranaNightMode(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+    controls_to_add.append(PranaAutoPlusMode(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+    controls_to_add.append(PranaBoostMode(hass, coordinator, config_entry.data["name"], config_entry.entry_id))
+
+    async_add_entities(controls_to_add)
 
 class BasePranaSwitch(CoordinatorEntity, SwitchEntity):
     # Implement one of these methods.
@@ -82,9 +91,14 @@ class BasePranaSwitch(CoordinatorEntity, SwitchEntity):
 
 class PranaHeating(BasePranaSwitch):
     @property
+    def unique_id(self) -> str:
+        """Return a unique, Home Assistant friendly identifier for this entity."""
+        return self._name + "_heating"
+
+    @property
     def name(self) -> str:
         """Return the name of the switch."""
-        return self._name + " heating"
+        return "Heating"
 
     @property
     def is_on(self):
@@ -99,21 +113,16 @@ class PranaHeating(BasePranaSwitch):
         """Turn off the entity."""
         await self.coordinator.set_heating(False)
 
-    @property
-    def unique_id(self) -> str:
-        """Return a unique, Home Assistant friendly identifier for this entity."""
-        return self.coordinator.mac.replace(":", "")+ "_heating"
-
 class PranaWinterMode(BasePranaSwitch):
     @property
     def unique_id(self) -> str:
         """Return a unique, Home Assistant friendly identifier for this entity."""
-        return self.coordinator.mac.replace(":", "")+ "_winter_mode"
+        return self._name + "_winter_mode"
 
     @property
     def name(self) -> str:
         """Return the name of the switch."""
-        return self._name + " winter mode"
+        return "Winter Mode"
 
     @property
     def is_on(self):
@@ -132,17 +141,17 @@ class PranaAutoMode(BasePranaSwitch):
     @property
     def unique_id(self) -> str:
         """Return a unique, Home Assistant friendly identifier for this entity."""
-        return self.coordinator.mac.replace(":", "")+ "_auto_mode"
+        return self._name + "_auto_mode"
 
     @property
     def name(self) -> str:
         """Return the name of the switch."""
-        return self._name + " auto mode"
+        return "Auto Mode"
 
     @property
     def is_on(self):
         """Return state of the fan."""
-        return self.coordinator.winter_mode_enabled
+        return self.coordinator.auto_mode
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn on the entity."""
@@ -151,3 +160,103 @@ class PranaAutoMode(BasePranaSwitch):
     async def async_turn_off(self, **kwargs) -> None:
         """Turn off the entity."""
         await self.coordinator.toggle_auto_mode()
+
+class PranaAutoPlusMode(BasePranaSwitch):
+    @property
+    def unique_id(self) -> str:
+        """Return a unique, Home Assistant friendly identifier for this entity."""
+        return self._name + "_auto_plus_mode"
+
+    @property
+    def name(self) -> str:
+        """Return the name of the switch."""
+        return "Auto+ Mode"
+
+    @property
+    def is_on(self):
+        """Return state of the fan."""
+        return self.coordinator.auto_mode_plus
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Turn on the entity."""
+        await self.coordinator.toggle_auto_plus_mode()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Turn off the entity."""
+        await self.coordinator.toggle_auto_plus_mode()
+
+class PranaNightMode(BasePranaSwitch):
+    @property
+    def unique_id(self) -> str:
+        """Return a unique, Home Assistant friendly identifier for this entity."""
+        return self._name + "_night_mode"
+
+    @property
+    def name(self) -> str:
+        """Return the name of the switch."""
+        return "Night Mode"
+
+    @property
+    def is_on(self):
+        """Return state of the fan."""
+        return self.coordinator.night_mode
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Turn on the entity."""
+        await self.coordinator.toggle_night_mode()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Turn off the entity."""
+        await self.coordinator.toggle_night_mode()
+
+class PranaBoostMode(BasePranaSwitch):
+    @property
+    def unique_id(self) -> str:
+        """Return a unique, Home Assistant friendly identifier for this entity."""
+        return self._name + "_boost_mode"
+
+    @property
+    def name(self) -> str:
+        """Return the name of the switch."""
+        return "Boost"
+
+    @property
+    def is_on(self):
+        """Return state of the fan."""
+        return self.coordinator.boost_mode
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Turn on the entity."""
+        await self.coordinator.toggle_boost_mode()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Turn off the entity."""
+        await self.coordinator.toggle_boost_mode()
+
+class PranaFlowLock(BasePranaSwitch):
+    @property
+    def unique_id(self) -> str:
+        """Return a unique, Home Assistant friendly identifier for this entity."""
+        return self._name + "_flow_lock"
+
+    @property
+    def name(self) -> str:
+        """Return the name of the switch."""
+        return "Flow Lock"
+
+    @property
+    def is_on(self):
+        """Return state of the fan."""
+        return self.coordinator.flows_locked
+
+    @property
+    def should_poll(self):
+        return False
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Turn on the entity."""
+        await self.coordinator.toggle_flow_lock()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Turn off the entity."""
+        await self.coordinator.toggle_flow_lock()

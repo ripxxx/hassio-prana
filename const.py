@@ -5,22 +5,51 @@ from typing import NamedTuple, List, Optional
 
 DOMAIN = "prana"
 
+class Display(Enum):
+    FAN = 0
+    TEMPERATURE_IN = 1
+    TEMPERATURE_OUT = 2
+    CO2 = 3
+    VOC = 4
+    HUMIDITY = 5
+    QUALITY_FAN = 6
+    PRESURE = 7
+    FAN_2 = 8
+    DATE = 9
+    TIME = 10
+
 class Speed(Enum):
     OFF = 0
     LOW = 1
-    HIGH = 10
+    HIGH = 5
+    SPEED_1 = 1
     SPEED_2 = 2
     SPEED_3 = 3
     SPEED_4 = 4
     SPEED_5 = 5
-    SPEED_6 = 6
-    SPEED_7 = 7
-    SPEED_8 = 8
-    SPEED_9 = 9
+    SPEED_BOOST_1 = 6
+    SPEED_BOOST_2 = 7
+    SPEED_BOOST_3 = 8
+    SPEED_BOOST_4 = 9
+    SPEED_BOOST_5 = 10
+    SPEED_BOOST = 10
+
+class PranaTimer(Enum):
+    STOP = 0
+    RUN = 1
+    RUN_10M = 2
+    RUN_20M = 3
+    RUN_30M = 4
+    RUN_1H = 5
+    RUN_1H30M = 6
+    RUN_2H = 7
+    RUN_3H = 8
+    RUN_5H = 9
+    RUN_9H = 10
 
     @classmethod
     def all_options(cls) -> List[str]:
-        return ["low", "l", "high", "h", "off", "stop", "2", "3", "4", "5", "6", "7", "8", "9"]
+        return ["low", "l", "high", "h", "off", "stop", "1", "2", "3", "4", "5"]
 
     @classmethod
     def from_str(cls, speed: str) -> "Speed":
@@ -33,7 +62,7 @@ class Speed(Enum):
             return cls.OFF
         try:
             speed_int = int(speed)
-            if 0 <= speed_int <= 10:
+            if 0 <= speed_int <= 5:
                 return cls(speed_int)
         except ValueError:
             pass
@@ -84,7 +113,9 @@ class PranaState(object):
         self.speed_in: Optional[int] = None
         self.speed_out: Optional[int] = None
         self.night_mode: Optional[bool] = None
+        self.boost_mode: Optional[bool] = None
         self.auto_mode: Optional[bool] = None
+        self.auto_mode_plus: Optional[bool] = None
         self.flows_locked: Optional[bool] = None
         self.is_on: Optional[bool] = None
         self.mini_heating_enabled: Optional[bool] = None
@@ -94,6 +125,9 @@ class PranaState(object):
         self.brightness: Optional[int] = None
         self.sensors: Optional[PranaSensorsState] = None
         self.timestamp: Optional[datetime.datetime] = None
+        self.display: Optional[Display] = None
+        self.timer_on: Optional[bool] = None
+        self.timer: Optional[int] = None
 
     @property
     def speed(self):
@@ -120,7 +154,9 @@ class PranaState(object):
             speed_in=self.speed_in,
             speed_out=self.speed_out,
             night_mode=self.night_mode,
+            boost_mode=self.boost_mode,
             auto_mode=self.auto_mode,
+            auto_mode_plus=self.auto_mode_plus,
             flows_locked=self.flows_locked,
             is_on=self.is_on,
             mini_heating_enabled=self.mini_heating_enabled,
@@ -131,6 +167,9 @@ class PranaState(object):
             speed=self.speed,
             brightness=self.brightness,
             sensors=self.sensors.to_dict() if self.sensors is not None else None,
+            display=self.display,
+            timer_on=self.timer_on,
+            timer=self.timer,
         )
 
 class EFFECTS (Enum):
